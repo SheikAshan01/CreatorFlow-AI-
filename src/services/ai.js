@@ -20,6 +20,7 @@ export const getBackendUrls = () => {
       list.push(custom);
     }
   }
+  list.push('https://creatorflow-backend-api.onrender.com/api');
   list.push('/py-api');
   list.push('http://127.0.0.1:8000/api');
   list.push('http://localhost:8000/api');
