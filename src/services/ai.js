@@ -8,13 +8,29 @@ const wordCount = (text = '') => text.split(/\s+/).filter(Boolean).length;
 const readingTime = (text = '') => Math.max(1, Math.ceil(wordCount(text) / 200));
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-// Dedicated Local Python Backend Connectors
-const PYTHON_BACKEND_URLS = ['/py-api', 'http://127.0.0.1:8000/api'];
+// Dedicated Backend Connectors (Supports Local, Render, Vercel Env, or User Custom URL)
+export const getBackendUrls = () => {
+  const custom = (localStorage.getItem('creator_backend_url') || import.meta.env?.VITE_BACKEND_URL || '').trim().replace(/\/+$/, '');
+  const list = [];
+  if (custom) {
+    if (custom.endsWith('/api')) {
+      list.push(custom);
+    } else {
+      list.push(`${custom}/api`);
+      list.push(custom);
+    }
+  }
+  list.push('/py-api');
+  list.push('http://127.0.0.1:8000/api');
+  list.push('http://localhost:8000/api');
+  return list;
+};
 
 export const checkPythonBackend = async () => {
-  for (const base of PYTHON_BACKEND_URLS) {
+  const candidateUrls = getBackendUrls();
+  for (const base of candidateUrls) {
     try {
-      const res = await fetch(`${base}/health`, { method: 'GET', signal: AbortSignal.timeout(1200) });
+      const res = await fetch(`${base}/health`, { method: 'GET', signal: AbortSignal.timeout(2500) });
       if (res.ok) {
         const data = await res.json();
         return { online: true, ...data, url: base };
@@ -27,19 +43,20 @@ export const checkPythonBackend = async () => {
 };
 
 export const callPythonApi = async (endpoint, body) => {
-  for (const base of PYTHON_BACKEND_URLS) {
+  const candidateUrls = getBackendUrls();
+  for (const base of candidateUrls) {
     try {
       const res = await fetch(`${base}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
-        signal: AbortSignal.timeout(6000)
+        signal: AbortSignal.timeout(10000)
       });
       if (res.ok) {
         return await res.json();
       }
     } catch {
-      // Try next
+      // Try next candidate
     }
   }
   return null;
@@ -48,7 +65,7 @@ export const callPythonApi = async (endpoint, body) => {
 const getAiSettings = () => {
   const apiKey = (localStorage.getItem('creator_ai_key') || localStorage.getItem('creator_openai_key') || '').trim();
   const provider = localStorage.getItem('creator_ai_provider') || (apiKey.startsWith('AIza') ? 'gemini' : apiKey.startsWith('gsk_') ? 'groq' : 'gemini');
-  const defaultModel = provider === 'gemini' ? 'gemini-2.5-flash' : provider === 'groq' ? 'llama-3.1-8b-instant' : 'gpt-4o-mini';
+  const defaultModel = provider === 'gemini' ? 'gemini-1.5-flash' : provider === 'groq' ? 'llama-3.1-8b-instant' : 'gpt-4o-mini';
   const model = localStorage.getItem('creator_ai_model') || defaultModel;
   const enabled = apiKey.length > 5;
   return {
@@ -61,12 +78,80 @@ const getAiSettings = () => {
 
 const shouldFallback = (status) => [400, 401, 403, 404, 408, 409, 429, 500, 502, 503, 504].includes(status);
 
+// Direct browser API caller for Vercel production deployment without backend dependency
+const callDirectBrowserAi = async (settings, prompt) => {
+  if (!settings.apiKey) return null;
+  const apiKey = settings.apiKey.trim();
+
+  if (settings.provider === 'gemini') {
+    const candidateModels = [
+      settings.model || 'gemini-1.5-flash',
+      'gemini-1.5-flash',
+      'gemini-2.0-flash',
+      'gemini-1.5-pro'
+    ];
+    const models = [...new Set(candidateModels.filter(m => m !== 'gemini-2.5-flash'))];
+
+    for (const m of models) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${encodeURIComponent(apiKey)}`;
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }]
+          }),
+          signal: AbortSignal.timeout(15000)
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const text = data.candidates?.[0]?.content?.parts?.map((p) => p.text || '').join('\n').trim();
+          if (text) return text;
+        }
+      } catch (err) {
+        console.warn(`Browser Gemini ${m} call failed:`, err);
+      }
+    }
+  } else if (settings.provider === 'groq') {
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: settings.model || 'llama-3.1-8b-instant',
+          messages: [{ role: 'user', content: prompt }]
+        }),
+        signal: AbortSignal.timeout(15000)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.choices?.[0]?.message?.content?.trim();
+      }
+    } catch (err) {
+      console.warn('Browser Groq call failed:', err);
+    }
+  }
+  return null;
+};
+
 const callOpenAI = async (prompt) => {
   const settings = getAiSettings();
   if (!settings.enabled || !settings.apiKey.trim()) {
     throw new Error('AI provider is not configured.');
   }
 
+  // 1. Try direct browser call (works seamlessly on Vercel without any proxy)
+  try {
+    const directText = await callDirectBrowserAi(settings, prompt);
+    if (directText) return directText;
+  } catch (err) {
+    console.warn('Direct browser AI error, trying fallback:', err);
+  }
+
+  // 2. Try Vite development server middleware (/api/ai)
   const response = await fetch('/api/ai', {
     method: 'POST',
     headers: {

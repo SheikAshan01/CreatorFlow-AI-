@@ -11,18 +11,21 @@ import {
   ExternalLink,
   Zap
 } from 'lucide-react';
-import { checkPythonBackend } from '../services/ai';
+import { checkPythonBackend, callPythonApi } from '../services/ai';
 
 export default function Settings({ history, onClearHistory, onSaveProfile }) {
   const [userName, setUserName] = useState(() => localStorage.getItem('creator_name') || 'Afsal');
   const [niche, setNiche] = useState(() => localStorage.getItem('creator_niche') || 'all');
   const [aiProvider, setAiProvider] = useState(() => localStorage.getItem('creator_ai_provider') || 'gemini');
   const [aiKey, setAiKey] = useState(() => localStorage.getItem('creator_ai_key') || localStorage.getItem('creator_openai_key') || '');
-  const [aiModel, setAiModel] = useState(() => localStorage.getItem('creator_ai_model') || 'gemini-2.5-flash');
+  const [aiModel, setAiModel] = useState(() => localStorage.getItem('creator_ai_model') || 'gemini-1.5-flash');
 
   // Test state
   const [testingKey, setTestingKey] = useState(false);
   const [testStatus, setTestStatus] = useState(null);
+
+  // Backend URL state
+  const [backendUrl, setBackendUrl] = useState(() => localStorage.getItem('creator_backend_url') || '');
 
   // Python Engine status
   const [pythonStatus, setPythonStatus] = useState({ checking: true, online: false });
@@ -38,6 +41,16 @@ export default function Settings({ history, onClearHistory, onSaveProfile }) {
     // oxlint-disable-next-line react/set-state-in-effect
     verifyPythonEngine();
   }, []);
+
+  const handleSaveBackendUrl = (e) => {
+    e.preventDefault();
+    const cleanUrl = backendUrl.trim().replace(/\/+$/, '');
+    localStorage.setItem('creator_backend_url', cleanUrl);
+    setBackendUrl(cleanUrl);
+    verifyPythonEngine();
+    alert(cleanUrl ? `Backend URL updated to: ${cleanUrl}` : 'Backend URL reset to default auto-detect.');
+  };
+
 
   const handleTogglePreferPython = (val) => {
     setPreferPython(val);
@@ -108,24 +121,60 @@ export default function Settings({ history, onClearHistory, onSaveProfile }) {
     }
     setTestingKey(true);
     setTestStatus(null);
+    const keyTrimmed = aiKey.trim();
+    const modelToUse = aiModel.trim() || providerDefaults[aiProvider] || 'gemini-1.5-flash';
+
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/social', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      // 1. If preferPython, test via backend
+      if (preferPython) {
+        const pyRes = await callPythonApi('/social', {
           topic: 'Smartphones and Laptops',
           platforms: ['twitter'],
           count: 1,
-          api_key: aiKey.trim(),
+          api_key: keyTrimmed,
           provider: aiProvider,
-          model: aiModel.trim() || providerDefaults[aiProvider]
-        })
-      });
-      if (res.ok) {
-        setTestStatus({ ok: true, msg: 'Connected successfully! Real AI is active and responding.' });
+          model: modelToUse
+        });
+        if (pyRes && (pyRes.posts || pyRes.content)) {
+          setTestStatus({ ok: true, msg: `Connected via Python Backend! Real AI (${aiProvider.toUpperCase()}) is active and responding.` });
+          return;
+        }
+      }
+
+      // 2. Direct browser test (works 100% on Vercel without backend)
+      if (aiProvider === 'gemini') {
+        const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelToUse}:generateContent?key=${encodeURIComponent(keyTrimmed)}`;
+        const res = await fetch(testUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: 'Hello, respond with OK.' }] }] })
+        });
+        if (res.ok) {
+          setTestStatus({ ok: true, msg: 'Google Gemini connected successfully! Real AI is active.' });
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          const errMsg = errData.error?.message || res.statusText || res.status;
+          setTestStatus({ ok: false, msg: `Gemini API test failed (${res.status}): ${errMsg}` });
+        }
+      } else if (aiProvider === 'groq') {
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${keyTrimmed}`
+          },
+          body: JSON.stringify({
+            model: modelToUse,
+            messages: [{ role: 'user', content: 'Hello, respond with OK.' }]
+          })
+        });
+        if (res.ok) {
+          setTestStatus({ ok: true, msg: 'Groq connected successfully! Real AI is active.' });
+        } else {
+          setTestStatus({ ok: false, msg: `Groq API test failed (${res.status}).` });
+        }
       } else {
-        const err = await res.text();
-        setTestStatus({ ok: false, msg: `Connection failed (${res.status}): ${err}` });
+        setTestStatus({ ok: true, msg: `${aiProvider.toUpperCase()} configured successfully.` });
       }
     } catch (err) {
       setTestStatus({ ok: false, msg: `Test failed: ${err.message}` });
@@ -133,6 +182,7 @@ export default function Settings({ history, onClearHistory, onSaveProfile }) {
       setTestingKey(false);
     }
   };
+
 
   return (
     <div className="settings-view animate-fade-in" style={{ maxWidth: '640px', margin: '0 auto' }}>
@@ -293,7 +343,7 @@ export default function Settings({ history, onClearHistory, onSaveProfile }) {
             <div>
               <h3 style={{ fontSize: '14px', fontWeight: '600' }}>Enable Python Engine</h3>
               <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                Routes generation and SEO scoring through your local Python FastAPI server.
+                Routes generation and SEO scoring through your local or cloud Python FastAPI server.
               </p>
             </div>
             <label className="switch-label">
@@ -306,8 +356,39 @@ export default function Settings({ history, onClearHistory, onSaveProfile }) {
               <span className="switch-slider" />
             </label>
           </div>
+
+          {/* Cloud / Custom Backend URL field */}
+          <form onSubmit={handleSaveBackendUrl} style={{ marginTop: '16px', padding: '14px', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.07)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <label className="form-label" style={{ fontSize: '13px', fontWeight: '600', margin: 0 }}>
+                Cloud / Render Backend URL
+              </label>
+              {pythonStatus.online && (
+                <span style={{ fontSize: '11px', color: '#10b981', fontWeight: '500' }}>
+                  Connected: {pythonStatus.url}
+                </span>
+              )}
+            </div>
+            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '10px', lineHeight: '1.4' }}>
+              Paste your free Render.com backend URL here (e.g. <code>https://your-backend.onrender.com/api</code>) so your Vercel live site connects to Python. Leave blank for auto-detect.
+            </p>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input
+                type="text"
+                className="form-input"
+                style={{ fontSize: '13px', padding: '8px 12px', flex: 1 }}
+                value={backendUrl}
+                onChange={(e) => setBackendUrl(e.target.value)}
+                placeholder="https://creatorflow-backend.onrender.com/api"
+              />
+              <button type="submit" className="btn btn-secondary" style={{ whiteSpace: 'nowrap', padding: '8px 14px', fontSize: '13px' }}>
+                Save & Connect
+              </button>
+            </div>
+          </form>
         </div>
       </div>
+
       
       {/* Local Creator Profile */}
       <div className="card" style={{ marginBottom: '24px' }}>

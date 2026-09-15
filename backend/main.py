@@ -61,16 +61,20 @@ class KeywordsRequest(BaseModel):
     intent: Optional[str] = Field("informational", description="informational or transactional")
 
 
+@app.get("/")
+@app.get("/health")
 @app.get("/api/health")
 def health_check():
     """Returns backend status and loaded AI engine information."""
     return {
         "status": "online",
+        "message": "CreatorFlow AI Backend is running successfully",
         "engine": "CreatorFlow Hybrid AI & NLP Engine",
         "version": "1.1.0",
         "real_ai_supported": True,
         "providers": ["gemini", "groq", "openai", "local"]
     }
+
 
 
 @app.post("/api/blog")
