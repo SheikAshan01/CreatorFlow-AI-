@@ -3,6 +3,14 @@ CreatorFlow AI - Dedicated Python NLP & AI Backend Server
 Built with FastAPI. Runs locally without external paid/cloud AI models.
 """
 
+import sys
+import os
+
+# Ensure local backend modules can be imported regardless of execution directory
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.insert(0, current_dir)
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -11,6 +19,7 @@ from typing import List, Optional
 from nlp_engine import generate_python_blog, generate_python_social
 from seo_engine import analyze_python_seo
 from keywords_engine import generate_python_keywords
+
 
 app = FastAPI(
     title="CreatorFlow AI Python Engine",
