@@ -192,90 +192,181 @@ const tryAiText = async (prompt) => {
   }
 };
 
-// Database of Industry-specific templates to build realistic articles
-const industryData = {
-  tech: {
-    headings: [
-      'The Shift Toward Modern Technical Architectures',
-      'Overcoming Integration and Deployment Obstacles',
-      'Industry Best Practices for Engineering Teams',
-      'The Next Phase: Looking Towards Future Innovations'
-    ],
-    paragraphs: [
-      'In today\'s digital landscape, setting up scalable systems is no longer a luxury. Modern tech environments demand robust development practices, clean data pipelines, and strong infrastructure choices to ensure smooth operations and prevent future failures.',
-      'One of the most persistent bottlenecks is managing integration complexity. As software grows, retaining code readability and deployment speeds becomes a major balance. Modern engineering teams solve this by adopting modular designs, clean tests, and automation frameworks.',
-      'Ultimately, engineering success requires aligning product capabilities with real-world problems. It is not just about writing clean lines of logic; it is about addressing system bottlenecks and building user-centric technical solutions that compound in value over time.'
-    ]
-  },
-  marketing: {
-    headings: [
-      'Identifying and Reaching Your Ideal Target Demographic',
-      'Crafting Content Strategies that Convert Readers',
-      'Utilizing Multi-Channel Promotion flywheels',
-      'Key Growth Metrics to Track and Measure Success'
-    ],
-    paragraphs: [
-      'Successful marketing is built on data-driven customer insights. Before launching any promotional campaigns, marketers must map out customer journeys to identify key touchpoints, understand user intent, and clear potential friction points.',
-      'With digital fatigue at an all-time high, generic advertisements no longer deliver high conversions. Brands must pivot to authority-building, educational content. Providing authentic value creates trust and positions you as a leading expert in the niche.',
-      'True business growth requires multi-channel coordination. Combining search engine optimization (SEO) with direct outreach and active communities generates a self-sustaining marketing loop that multiplies organic brand exposure.'
-    ]
-  },
-  finance: {
-    headings: [
-      'Foundations of Wealth Building and Resource Planning',
-      'Understanding Risk Factors and Asset Distribution Models',
-      'The Compounding Power of Smart Financial Habits',
-      'Developing Sustainable Cash Flow Streams'
-    ],
-    paragraphs: [
-      'Achieving long-term wealth begins with clear cash flow management. Whether organizing startup budgets or personal funds, minimizing high-interest liabilities and maintaining a stable liquidity cushion are critical first steps.',
-      'Diversified allocation models form the bedrock of risk management. Balancing capital across index funds, secure sectors, and alternative assets mitigates losses during market corrections. Focus on long-term compound growth rather than short-term market speculation.',
-      'Ultimately, financial freedom is about generating passive cash flow. Building income sources that require minimal active oversight provides the flexibility and stability to seize new ventures and protect purchasing power against inflation.'
-    ]
-  },
-  health: {
-    headings: [
-      'Integrating Body and Mind for Longevity',
-      'Designing a Nutritional Framework that Sustains Vitality',
-      'Managing Daily Stress Through Sleep and Recovery Systems',
-      'Forming Functional Movement Routines that Last'
-    ],
-    paragraphs: [
-      'Optimal physical wellness is a holistic achievement. Vitality requires aligning balanced nutrition, consistent conditioning, and quality mental recovery. Addressing symptoms in isolation rarely yields long-term health improvements.',
-      'Nutritional plans should focus on fresh, nutrient-dense whole foods that support digestive health, steady energy, and stable blood sugar. Developing simple, repeatable meal prep habits is far more effective than chasing transient diet trends.',
-      'Consistent movement and regular recovery schedules are non-negotiable. Building muscle strength, supporting cardiovascular efficiency, and obtaining deep circadian sleep keep the body resilient against physical stress and aging.'
-    ]
-  },
-  general: {
-    headings: [
-      'Essential Foundations and Basic Principles',
-      'Identifying Obstacles and Strategic Workarounds',
-      'Building Daily habits to Maintain Steady Progress',
-      'Summary Guidelines and Future Recommendations'
-    ],
-    paragraphs: [
-      'Embarking on any new goal requires a clear vision and organized execution. Setting achievable milestones early prevents overwhelm and maintains steady momentum, ensuring you stay focused on target actions.',
-      'Inevitably, obstacles will arise along the journey. Adapting to challenges, reviewing feedback, and editing your methods are the keys to long-term success. Focus on minor iterations and treat mistakes as learning opportunities.',
-      'Consistency is far more powerful than sporadic bursts of effort. By dedicating focused time daily to your objectives, you establish positive habits that compound over time, leading to major progress.'
-    ]
+// =========================================================================
+// INTELLIGENT MULTI-DOMAIN TOPIC CLASSIFIER & KNOWLEDGE ENGINE
+// =========================================================================
+export const detectDomain = (topic) => {
+  const t = (topic || '').toLowerCase().trim();
+  const words = t.split(/[^a-zA-Z0-9]+/).filter(w => w.length > 2);
+  const tag = words.slice(0, 2).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('') || 'Topic';
+
+  // 1. Food & Culinary
+  if (/\b(biryani|recipe|cooking|cook|dish|food|cake|bake|baking|kitchen|restaurant|chef|coffee|tea|breakfast|dinner|lunch|curry|masala|spices?|snack|dessert|paneer|chicken|mutton|pasta|pizza|bread)\b/.test(t)) {
+    return {
+      domain: 'food',
+      tag,
+      emojis: ['🍳', '🥘', '🍽️', '😋', '👨‍🍳'],
+      hashtags: [`#${tag}`, '#Foodie', '#RecipeOfTheDay', '#CookingTips', '#DeliciousEats', '#HomeCooking']
+    };
   }
-};
 
-const detectIndustry = (topic) => {
-  const normTopic = normalizeTopic(topic);
-  if (/iphone|android|samsung|mobile|phone|smartphone|laptop|camera|gadget|device|wearable|tablet|tech|software|ai|programming|code|web|app|developer|cloud|data|automation|api/.test(normTopic)) return 'tech';
-  if (/marketing|seo|brand|sales|growth|traffic|social|content|campaign/.test(normTopic)) return 'marketing';
-  if (/finance|money|invest|crypto|budget|stocks|wealth|saving|income/.test(normTopic)) return 'finance';
-  if (/health|fitness|diet|wellness|nutrition|workout|sleep|stress/.test(normTopic)) return 'health';
-  return 'general';
-};
+  // 2. Sports, Games & Athletics
+  if (/\b(cricket|ipl|football|soccer|tennis|basketball|badminton|match|tournament|player|batting|bowling|goal|stadium|championship|athlete|marathon|fifa|olympics)\b/.test(t)) {
+    return {
+      domain: 'sports',
+      tag,
+      emojis: ['🏏', '⚽', '🏆', '🔥', '🥇'],
+      hashtags: [`#${tag}`, '#MatchDay', '#SportsNews', '#GameHighlights', '#AthleteLife', '#Champions']
+    };
+  }
 
-const detectTopicType = (topic) => {
-  const normalized = normalizeTopic(topic);
-  if (/iphone|android|samsung|mobile|phone|smartphone|laptop|camera|gadget|device|wearable|tablet/.test(normalized)) return 'device';
-  if (/course|class|training|workshop|webinar|bootcamp/.test(normalized)) return 'course';
-  if (/sale|offer|discount|deal|launch|new arrival|product|service/.test(normalized)) return 'offer';
-  return 'general';
+  // 3. Healthcare, Medicine & Dental
+  if (/\b(dental|teeth|tooth|clinic|doctor|hospital|patient|medicine|medical|surgery|hygiene|dentist|appointment|treatment|prescription|allergy|disease|health care|nursing)\b/.test(t)) {
+    return {
+      domain: 'medical',
+      tag,
+      emojis: ['🩺', '🦷', '🏥', '💊', '✨'],
+      hashtags: [`#${tag}`, '#Healthcare', '#DoctorAdvice', '#PatientCare', '#HealthyHabits', '#MedicalTips']
+    };
+  }
+
+  // 4. Fitness, Gym & Wellness
+  if (/\b(fitness|gym|workout|weight loss|fat loss|muscle|exercise|yoga|calisthenics|diet plan|protein|sleep hygiene|meditation|mental health|stretching|cardio|running)\b/.test(t)) {
+    return {
+      domain: 'fitness',
+      tag,
+      emojis: ['💪', '🏃‍♂️', '🥗', '🧘‍♀️', '🔥'],
+      hashtags: [`#${tag}`, '#FitnessGoals', '#GymMotivation', '#HealthyLiving', '#WorkoutRoutine', '#WellnessJourney']
+    };
+  }
+
+  // 5. Travel & Tourism
+  if (/\b(travel|tour|trip|vacation|hotel|resort|flight|beach|mountain|destination|city|itinerary|backpacking|sightseeing|places to visit|tourism|passport|adventure)\b/.test(t)) {
+    return {
+      domain: 'travel',
+      tag,
+      emojis: ['✈️', '🏖️', '🗺️', '🧳', '📸'],
+      hashtags: [`#${tag}`, '#TravelDiaries', '#Wanderlust', '#ExploreTheWorld', '#VacationVibes', '#TravelTips']
+    };
+  }
+
+  // 6. Automotive & Vehicles
+  if (/\b(car|cars|bike|bikes|motorcycle|ev|electric vehicle|tesla|driving|engine|mileage|automotive|scooter|suv|sedan|speed|petrol|diesel|ride|tata|hyundai|bmw)\b/.test(t)) {
+    return {
+      domain: 'automotive',
+      tag,
+      emojis: ['🚗', '⚡', '🏍️', '💨', '🔧'],
+      hashtags: [`#${tag}`, '#CarLovers', '#Automotive', '#EVRevolution', '#BikeLife', '#DriveSafe']
+    };
+  }
+
+  // 7. Education, Study & Career
+  if (/\b(study|exam|exams|college|school|university|student|career|interview|resume|syllabus|degree|learning|maths|science|physics|test preparation|upsc|jee|neet)\b/.test(t)) {
+    return {
+      domain: 'education',
+      tag,
+      emojis: ['📚', '✏️', '🎓', '💡', '🎯'],
+      hashtags: [`#${tag}`, '#StudyTips', '#StudentLife', '#CareerAdvice', '#ExamPreparation', '#LearnDaily']
+    };
+  }
+
+  // 8. Real Estate, Homes & Property
+  if (/\b(real estate|property|house|home|apartment|flat|villa|land|rent|buying house|interior design|builder|construction|mortgage|architecture)\b/.test(t)) {
+    return {
+      domain: 'real_estate',
+      tag,
+      emojis: ['🏡', '🏢', '🔑', '✨', '📐'],
+      hashtags: [`#${tag}`, '#RealEstate', '#DreamHome', '#PropertyInvestment', '#InteriorDesign', '#HouseHunting']
+    };
+  }
+
+  // 9. Fashion, Beauty & Skincare
+  if (/\b(fashion|beauty|makeup|skincare|dress|outfit|clothing|style|grooming|hair care|cosmetics|wedding dress|jewelry|trend|glam)\b/.test(t)) {
+    return {
+      domain: 'fashion',
+      tag,
+      emojis: ['👗', '💄', '✨', '🌸', '👠'],
+      hashtags: [`#${tag}`, '#FashionTrends', '#BeautyTips', '#SkincareRoutine', '#OOTD', '#StyleInspo']
+    };
+  }
+
+  // 10. Entertainment, Movies & Gaming
+  if (/\b(movie|film|cinema|actor|actress|box office|song|music|gaming|video game|ps5|xbox|gta|streamer|series|netflix|anime|trailer)\b/.test(t)) {
+    return {
+      domain: 'entertainment',
+      tag,
+      emojis: ['🎬', '🎮', '🍿', '🎧', '⭐'],
+      hashtags: [`#${tag}`, '#MovieReview', '#GamingCommunity', '#CinemaLovers', '#Entertainment', '#GameOn']
+    };
+  }
+
+  // 11. Coding, Software & Web Development
+  if (/\b(code|coding|python|javascript|react|developer|api|backend|frontend|programming|web dev|github|database|bug|sql|docker|node|typescript)\b/.test(t)) {
+    return {
+      domain: 'coding',
+      tag,
+      emojis: ['💻', '🚀', '⚡', '👨‍💻', '🛠️'],
+      hashtags: [`#${tag}`, '#WebDevelopment', '#CodingLife', '#SoftwareEngineer', '#DevCommunity', '#CodeNewbie']
+    };
+  }
+
+  // 12. Artificial Intelligence & Data Science
+  if (/\b(ai|artificial intelligence|machine learning|deep learning|data science|chatgpt|automation|llm|neural|robotics|generative ai)\b/.test(t)) {
+    return {
+      domain: 'ai',
+      tag,
+      emojis: ['🤖', '🧠', '⚡', '🔮', '💡'],
+      hashtags: [`#${tag}`, '#ArtificialIntelligence', '#MachineLearning', '#TechTrends', '#FutureOfWork', '#AIDevelopment']
+    };
+  }
+
+  // 13. Gadgets & Hardware (Smartphones, Laptops, PCs)
+  if (/\b(laptop|macbook|pc|desktop|computer|phone|smartphone|iphone|samsung|galaxy|pixel|tablet|gadget|camera|hardware|processor|specs)\b/.test(t)) {
+    return {
+      domain: 'gadgets',
+      tag,
+      emojis: ['📱', '💻', '⚡', '🔍', '🔋'],
+      hashtags: [`#${tag}`, '#TechReview', '#GadgetGeek', '#SmartphoneNews', '#WorkstationSetup', '#TechUpgrade']
+    };
+  }
+
+  // 14. Finance, Money & Investing
+  if (/\b(money|finance|invest|investing|stock|stocks|crypto|bitcoin|budget|wealth|savings|mutual fund|trading|passive income|portfolio)\b/.test(t)) {
+    return {
+      domain: 'finance',
+      tag,
+      emojis: ['💰', '📈', '💵', '📊', '🏦'],
+      hashtags: [`#${tag}`, '#PersonalFinance', '#InvestingTips', '#FinancialFreedom', '#WealthCreation', '#MoneyMatters']
+    };
+  }
+
+  // 15. Marketing & SEO
+  if (/\b(marketing|seo|search engine|ranking|brand|branding|sales|lead gen|traffic|funnel|copywriting|b2b|advertising|social media growth)\b/.test(t)) {
+    return {
+      domain: 'marketing',
+      tag,
+      emojis: ['📈', '🎯', '🚀', '📢', '💡'],
+      hashtags: [`#${tag}`, '#DigitalMarketing', '#SEOTips', '#BrandGrowth', '#ContentStrategy', '#OrganicTraffic']
+    };
+  }
+
+  // 16. Pets & Animals
+  if (/\b(dog|dogs|cat|cats|pet|pets|puppy|veterinary|animal|kitten|training dog|pet care)\b/.test(t)) {
+    return {
+      domain: 'pets',
+      tag,
+      emojis: ['🐾', '🐶', '🐱', '❤️', '🦴'],
+      hashtags: [`#${tag}`, '#PetLovers', '#DogLife', '#CatLovers', '#PetCareTips', '#CutePets']
+    };
+  }
+
+  // Default: Knowledge & Insights
+  return {
+    domain: 'general',
+    tag,
+    emojis: ['✨', '💡', '📌', '🔍', '🎯'],
+    hashtags: [`#${tag}`, '#Insights', '#ProTips', '#BestPractices', '#Guide', '#KnowledgeSharing']
+  };
 };
 
 const cleanHashtagToken = (topic) => topic
@@ -285,96 +376,12 @@ const cleanHashtagToken = (topic) => topic
   .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
   .join('');
 
-const getTopicHashtags = (topic, industry) => {
-  const topicTag = cleanHashtagToken(topic);
-  const pools = {
-    tech: ['#TechReview', '#Smartphone', '#GadgetLovers', '#MobileTech'],
-    marketing: ['#MarketingTips', '#BrandGrowth', '#ContentStrategy', '#DigitalMarketing'],
-    finance: ['#FinanceTips', '#MoneyMindset', '#Investing', '#WealthBuilding'],
-    health: ['#HealthyLifestyle', '#WellnessTips', '#FitnessGoals', '#SelfCare'],
-    general: ['#Tips', '#DailyValue', '#SmartChoice', '#NewPost'],
-  };
-
-  return [`#${topicTag}`, ...(pools[industry] || pools.general)].filter((tag) => tag.length > 1);
+const getTopicHashtags = (topic) => {
+  const ctx = detectDomain(topic);
+  return ctx.hashtags;
 };
 
-const platformLineBreak = (platform) => platform === 'twitter' ? ' ' : '\n\n';
-
-const buildLocalSocialCaption = (topic, platform, tone, variant, tags) => {
-  const topicType = detectTopicType(topic);
-  const tagText = platform === 'instagram' ? tags.join('\n') : tags.slice(0, 4).join(' ');
-  const gap = platformLineBreak(platform);
-  const isShort = platform === 'twitter';
-
-  const deviceCaptions = [
-    `Thinking about **${topic}**? Start with what matters most: camera quality, battery life, display brightness, storage, and long-term software support.${gap}${isShort ? 'Quick pick: compare real needs before upgrading.' : 'Before upgrading, compare your current phone with the features you will actually use every day.'}${gap}${tagText}`,
-    `**${topic}** is a strong choice if you want a premium phone experience without overcomplicating the decision.${gap}Check these before buying: camera performance, battery backup, storage size, warranty, and final price after offers.${gap}${tagText}`,
-    `Buying **${topic}**? Do not choose only by hype.${gap}Pick it if you need smoother performance, better photos/videos, reliable updates, and a phone that can stay useful for years.${gap}${tagText}`,
-  ];
-
-  const generalCaptions = [
-    `Here is a practical look at **${topic}**.${gap}The real value comes from understanding who it is for, what problem it solves, and why now is the right time to care.${gap}${tagText}`,
-    `If **${topic}** is on your mind, focus on benefits instead of noise.${gap}Look at the use case, the outcome, and the next step you can take today.${gap}${tagText}`,
-    `Let us keep **${topic}** simple.${gap}Know the goal, compare the options, and choose the path that gives the most useful result for your situation.${gap}${tagText}`,
-  ];
-
-  const offerCaptions = [
-    `New update on **${topic}**.${gap}If you have been waiting for the right moment, compare the value, check the details, and make a confident decision.${gap}${tagText}`,
-    `Looking at **${topic}**?${gap}This is a good time to review the features, pricing, and fit before you decide.${gap}${tagText}`,
-    `Do not miss the details on **${topic}**.${gap}Check what you get, who it helps, and whether the offer matches your need.${gap}${tagText}`,
-  ];
-
-  const courseCaptions = [
-    `Want to learn **${topic}**?${gap}Start with the fundamentals, practice consistently, and build one small project or result at a time.${gap}${tagText}`,
-    `**${topic}** becomes easier when you follow a clear path.${gap}Learn the basics, apply them quickly, and review your progress every week.${gap}${tagText}`,
-    `If you are starting **${topic}**, keep it practical.${gap}Focus on real examples, daily practice, and measurable improvement.${gap}${tagText}`,
-  ];
-
-  const captionGroups = {
-    device: deviceCaptions,
-    offer: offerCaptions,
-    course: courseCaptions,
-    general: generalCaptions,
-  };
-
-  const caption = captionGroups[topicType][variant % captionGroups[topicType].length];
-
-  if (tone.toLowerCase() === 'bold') {
-    return caption.replace('Thinking about', 'Stop guessing about').replace('Here is', 'Here is the no-fluff take on');
-  }
-
-  if (tone.toLowerCase() === 'professional') {
-    return caption.replace('Do not', 'Avoid').replace('Let us', 'Let us');
-  }
-
-  return applyToneModifications(caption, tone);
-};
-
-const localDataset = {
-  tech: {
-    angles: ['implementation roadmap', 'automation plan', 'security checklist', 'performance improvement'],
-    actions: ['audit current workflows', 'standardize reusable modules', 'measure latency and failure points', 'document rollback steps'],
-  },
-  marketing: {
-    angles: ['audience research', 'conversion copy', 'channel strategy', 'retention loop'],
-    actions: ['define buyer intent', 'map content to funnel stages', 'test CTAs weekly', 'repurpose winning posts'],
-  },
-  finance: {
-    angles: ['risk control', 'cash-flow planning', 'long-term compounding', 'portfolio discipline'],
-    actions: ['separate emergency funds', 'review recurring expenses', 'avoid concentrated bets', 'rebalance on schedule'],
-  },
-  health: {
-    angles: ['habit design', 'recovery planning', 'nutrition basics', 'progress tracking'],
-    actions: ['set realistic routines', 'prioritize sleep quality', 'track energy levels', 'adjust slowly'],
-  },
-  general: {
-    angles: ['clear goals', 'practical execution', 'habit building', 'review system'],
-    actions: ['break the work into milestones', 'remove avoidable friction', 'track weekly progress', 'keep improving the process'],
-  },
-};
-
-// Tone modifications vocabulary helper
-const applyToneModifications = (text, tone) => {
+const applyToneModifications = (text, tone = 'Informative') => {
   const modifications = {
     professional: {
       replace: { 'get': 'acquire', 'make': 'construct', 'use': 'utilize', 'bad': 'suboptimal', 'good': 'advantageous', 'start': 'commence' }
@@ -383,7 +390,7 @@ const applyToneModifications = (text, tone) => {
       replace: { 'utilize': 'use', 'suboptimal': 'rough', 'therefore': 'so', 'however': 'but', 'furthermore': 'plus', 'acquire': 'get' }
     },
     witty: {
-      replace: { 'important': 'vital (unlike the extra plastic wrap on cereal boxes)', 'process': 'routine dance', 'success': 'world domination' }
+      replace: { 'important': 'vital (unlike the extra plastic wrap on cereal boxes)', 'process': 'routine dance' }
     },
     persuasive: {
       replace: { 'helpful': 'transformative', 'useful': 'indispensable', 'change': 'revolutionize', 'important': 'absolutely vital' }
@@ -395,103 +402,341 @@ const applyToneModifications = (text, tone) => {
 
   const mod = modifications[tone.toLowerCase()] || modifications.informative;
   let result = text;
-  
   Object.entries(mod.replace).forEach(([key, val]) => {
     const regex = new RegExp(`\\b${key}\\b`, 'gi');
     result = result.replace(regex, val);
   });
-
   return result;
 };
 
-// 1. BLOG GENERATOR
+const buildDomainSpecificBlog = (topic, domain, audience, keywords) => {
+  const tCap = topic.charAt(0).toUpperCase() + topic.slice(1);
+  const kwStr = keywords.length > 0 ? keywords.join(', ') : topic;
+
+  if (domain === 'food') {
+    const title = `The Ultimate Guide to ${tCap}: Ingredients, Recipe & Cooking Tips`;
+    const body = `# ${title}
+
+There is nothing quite as satisfying as a masterfully prepared serving of **${topic}**. Whether you are cooking for family, entertaining guests, or perfecting your culinary skills as ${audience || 'food lovers'}, getting the taste, texture, and aroma right requires attention to authentic ingredients and timing.
+
+## 1. Essential Ingredients & Flavor Pairing for ${tCap}
+Every delicious batch of ${topic} begins with fresh, high-quality ingredients.
+- **Base Components & Fresh Produce:** Quality ingredients form the backbone of your dish. Choose fresh produce and premium pantry essentials.
+- **Aromatic Spices & Seasoning:** Balanced seasoning transforms standard cooking into restaurant-grade flavor. Incorporate **${kwStr}** to elevate the aroma.
+- **Texture Balance:** Pay close attention to moisture levels so the final dish is neither too dry nor overly saturated.
+
+## 2. Step-by-Step Preparation & Temperature Control
+Mastering ${topic} requires precise cooking stages:
+1. **Prep Work & Marination:** Allow flavors sufficient time to infuse before applying heat.
+2. **Heat Management:** Start with controlled medium heat to develop rich caramelization, then adjust to simmer to lock in tenderness and juices.
+3. **Layering Flavors:** Add delicate herbs and final seasonings in the last minutes of cooking to preserve their fresh notes.
+
+## 3. Pro Tips to Avoid Common Culinary Mistakes
+- **Do not rush the resting period:** Allowing ${topic} to rest for 5 to 10 minutes before serving lets juices redistribute evenly.
+- **Taste as you cook:** Adjust salt and acidity right before plating for the best balance.
+- **Presentation:** Garnish with fresh herbs or a touch of roasted spices to make the dish visually irresistible.
+
+## Conclusion
+Cooking authentic **${topic}** is a rewarding craft. With the right foundation and patience, you can consistently prepare a dish that delights everyone at the table.
+`;
+    return { title, body };
+  }
+
+  if (domain === 'sports') {
+    const title = `${tCap} Complete Guide: Tactics, Player Performance & Winning Strategies`;
+    const body = `# ${title}
+
+In the competitive arena of modern sports, understanding the dynamics of **${topic}** requires breaking down tactical execution, physical conditioning, and game-day psychology. Whether you are an avid follower, aspiring player, or team analyst, mastering these core principles is essential for **${audience || 'athletes and fans'}**.
+
+## 1. Key Fundamentals & Tactical Blueprint of ${tCap}
+Success on the field or court starts with strong structural discipline:
+- **Positional Awareness:** Players must anticipate plays and maintain solid team coordination under pressure.
+- **Skill Execution:** Consistent execution of core techniques, including **${kwStr}**, separates good performers from elite champions.
+- **Physical Conditioning:** Stamina, agility, and recovery protocols directly dictate performance in the closing minutes of a match.
+
+## 2. Strategic Adaptations Under High-Pressure Moments
+No game plan survives contact without in-game adjustments:
+1. **Reading the Opponent:** Identify defensive weaknesses and exploit momentum shifts early.
+2. **Set Pieces & Tactical Drills:** High-efficiency conversion on scoring opportunities often decides close contests.
+3. **Mental Toughness:** Staying calm during referee calls, crowd noise, and high-stakes phases is the trademark of winning teams.
+
+## 3. Analysis, Technology & Future Evolution in ${tCap}
+From video review analysis to biomechanical tracking, modern preparation has evolved. Teams that analyze opponent data while safeguarding player fitness gain a decisive competitive advantage.
+
+## Conclusion
+Whether on the practice field or on the championship stage, **${topic}** rewards preparation, teamwork, and resilience. Focus on mastering the basics, adapt quickly, and play with purpose.
+`;
+    return { title, body };
+  }
+
+  if (domain === 'medical') {
+    const title = `Everything You Need to Know About ${tCap}: Care, Prevention & Advice`;
+    const body = `# ${title}
+
+Navigating **${topic}** effectively is vital for safeguarding your long-term health and wellbeing. When addressing medical and clinical concerns, having transparent, reliable information enables **${audience || 'patients and families'}** to take timely preventive action and make educated healthcare decisions.
+
+## 1. Understanding the Core Causes & Early Indicators of ${tCap}
+Recognizing early warning signs prevents minor discomfort from escalating into severe complications:
+- **Common Symptoms to Watch:** Be vigilant for chronic discomfort, visible changes, or unusual fatigue related to ${topic}.
+- **Underlying Risk Factors:** Lifestyle choices, genetic predisposition, and environmental triggers can contribute to the condition.
+- **Preventive Protocols:** Integrating **${kwStr}** into your daily routine supports overall resilience and health maintenance.
+
+## 2. Professional Diagnosis & Treatment Options
+Accurate clinical evaluation is the cornerstone of effective care:
+1. **Clinical Consultation:** Always consult a qualified specialist rather than relying on unverified online advice.
+2. **Diagnostic Assessment:** Comprehensive examinations or imaging provide an objective baseline for tailored care plans.
+3. **Structured Care Plan:** Adhere strictly to prescribed medications, follow-up schedules, and therapeutic guidelines.
+
+## 3. Practical Daily Hygiene & Preventive Habits
+- **Maintain Regular Checkups:** Routine evaluations detect emerging concerns before they require invasive interventions.
+- **Holistic Care:** Support clinical treatments with balanced nutrition, hydration, and adequate restorative sleep.
+- **Avoid Self-Medication:** Only use clinically tested remedies and follow your doctor's exact instructions.
+
+## Conclusion
+Taking proactive charge of **${topic}** ensures better peace of mind and long-term health. Prioritize professional consultations and consistent daily care for optimal wellness.
+`;
+    return { title, body };
+  }
+
+  if (domain === 'fitness') {
+    const title = `Mastering ${tCap}: Proven Workouts, Nutrition & Lifestyle Roadmap`;
+    const body = `# ${title}
+
+Transforming your body and elevating your physical fitness through **${topic}** requires a science-backed methodology rather than extreme shortcuts. For **${audience || 'fitness enthusiasts'}**, sustainable health and peak stamina come from balancing progressive training, sound nutrition, and active recovery.
+
+## 1. Foundations of ${tCap}: Setting Up for Long-Term Progress
+Every fitness journey succeeds when built on repeatable fundamentals:
+- **Progressive Overload:** Gradually challenge your strength and endurance over time to stimulate muscle adaptation.
+- **Form & Biomechanics:** Prioritize clean movement patterns over heavy ego-lifting to prevent injury.
+- **Targeted Integration:** Weaving **${kwStr}** into your routine keeps workouts engaging and goal-oriented.
+
+## 2. Fueling Your Body: Nutrition & Meal Strategy
+Workouts break muscle down; nutrition builds it back stronger:
+1. **Macronutrient Balance:** Ensure adequate dietary protein, complex carbohydrates for energy, and healthy fats.
+2. **Hydration & Electrolytes:** Maintaining optimal hydration sustains workout intensity and prevents cramping.
+3. **Pre & Post-Workout Fuel:** Eat a balanced nutrient-dense meal within 2 hours of training to accelerate glycogen replenishment.
+
+## 3. Recovery: The Underrated Key to Fitness Results
+- **Sleep Quality:** Aim for 7 to 8 hours of deep restorative sleep to optimize growth hormone release and nervous system recovery.
+- **Active Rest Days:** Gentle walks, mobility drills, and stretching reduce soreness and preserve joint mobility.
+
+## Conclusion
+Real progress in **${topic}** is a marathon, not a sprint. Celebrate small daily wins, track your workouts, and trust the compounding power of consistency.
+`;
+    return { title, body };
+  }
+
+  if (domain === 'travel') {
+    const title = `The Complete Travel Guide to ${tCap}: Itinerary, Budget & Hidden Gems`;
+    const body = `# ${title}
+
+Planning a trip centered around **${topic}** is one of the most exciting adventures a traveler can undertake. Whether you are traveling solo, with family, or as part of an adventure group of **${audience || 'explorers'}**, having a smart travel roadmap ensures a memorable, hassle-free journey.
+
+## 1. Best Time to Visit & Planning Your Travel Budget
+Timing and logistics can make or break your trip experience:
+- **Optimal Travel Season:** Plan around seasonal weather and festival windows to balance pleasant temperatures with reasonable crowds.
+- **Budgeting & Accommodations:** Research flight options early and book centrally located stays to minimize daily commuting costs.
+- **Essential Focus:** Include **${kwStr}** in your destination research to unlock authentic cultural highlights.
+
+## 2. Top Attractions, Sightseeing & Local Experiences
+Make the most of every day with a balanced itinerary:
+1. **Must-See Landmarks:** Visit iconic heritage spots and natural viewpoints during early morning hours to beat tour bus traffic.
+2. **Authentic Local Cuisine:** Skip tourist traps and explore street markets, traditional eateries, and regional specialties.
+3. **Off-the-Beaten-Path Secrets:** Ask local guides or residents for lesser-known scenic routes and serene escapes.
+
+## 3. Practical Travel Tips, Safety & Packing Essentials
+- **Pack Light & Smart:** Comfortable walking shoes, versatile layers, and essential charging gear are mandatory.
+- **Local Customs & Etiquette:** Respect regional traditions and dress codes to foster welcoming interactions with locals.
+- **Digital Backup:** Keep digital copies of your passport, booking reservations, and offline maps on your smartphone.
+
+## Conclusion
+Exploring **${topic}** will give you stories that last a lifetime. Keep an open mind, savor the local flavors, and travel with curiosity.
+`;
+    return { title, body };
+  }
+
+  if (domain === 'automotive') {
+    const title = `${tCap} In-Depth Review: Performance, Mileage & Buyer's Guide`;
+    const body = `# ${title}
+
+Choosing the right vehicle or evaluating **${topic}** requires looking beyond glossy brochures and understanding real-world driving dynamics, fuel/energy efficiency, safety ratings, and ongoing maintenance costs for **${audience || 'drivers'}**.
+
+## 1. Engine Performance, Driving Dynamics & Handling
+How a vehicle behaves on city roads and highways is the true measure of engineering quality:
+- **Power Delivery & Acceleration:** Responsive throttle response and smooth gear transitions deliver effortless overtaking confidence.
+- **Suspension & Ride Comfort:** A well-tuned suspension filters out road undulations while preventing excessive body roll around corners.
+- **Key Specifications:** Incorporating **${kwStr}** into your evaluation ensures the vehicle aligns with your performance expectations.
+
+## 2. Fuel Economy, Range & Real-World Efficiency
+Running costs dictate long-term vehicle satisfaction:
+1. **City vs. Highway Efficiency:** Check verified owner mileage figures rather than relying solely on test-track claims.
+2. **Maintenance & Spare Parts:** Opt for manufacturers with extensive service networks, affordable service intervals, and accessible replacement parts.
+3. **Safety Architecture:** Verify crash safety ratings, ABS with EBD, traction control, and advanced airbag coverage.
+
+## 3. Buyer's Checklist & Final Verdict
+- **Schedule an Extended Test Drive:** Test the vehicle across broken roads, traffic bottlenecks, and highway stretches before booking.
+- **Cabin Ergonomics:** Ensure generous legroom, responsive infotainment with Apple CarPlay / Android Auto, and practical boot storage.
+
+## Conclusion
+If you value reliability, refined driving manners, and solid build quality, **${topic}** stands out as a compelling contender in its category.
+`;
+    return { title, body };
+  }
+
+  if (domain === 'education') {
+    const title = `The Comprehensive Guide to ${tCap}: Roadmap, Study Tips & Success`;
+    const body = `# ${title}
+
+Excelling in **${topic}** is not about studying around the clock; it is about studying with strategic focus, efficient recall techniques, and a structured syllabus roadmap. For **${audience || 'students and learners'}**, mastering this domain opens doors to academic excellence and rewarding career opportunities.
+
+## 1. Core Concepts & Syllabus Breakdown for ${tCap}
+Establish a rock-solid foundation before diving into advanced topics:
+- **Master the Fundamentals:** Build deep conceptual clarity rather than relying on rote memorization.
+- **Structured Study Schedule:** Divide the curriculum into weekly modules and assign dedicated review blocks.
+- **Targeted Integration:** Focus on core benchmarks including **${kwStr}** to streamline revision.
+
+## 2. Proven Learning Techniques for Maximum Retention
+Work smarter with evidence-based cognitive strategies:
+1. **Active Recall & Spaced Repetition:** Test yourself regularly with flashcards and mock exams rather than passively re-reading notes.
+2. **The Feynman Technique:** Explain difficult topics in simple, plain language to immediately expose knowledge gaps.
+3. **Timed Practice Mock Tests:** Simulate real exam conditions to build speed, composure, and time-management discipline.
+
+## 3. Overcoming Exam Stress & Staying Motivated
+- **Avoid Procrastination:** Use the Pomodoro technique (25 minutes of deep focus followed by a 5-minute break) to maintain energy.
+- **Healthy Lifestyle:** Prioritize consistent sleep and healthy meals; an exhausted brain cannot synthesize complex problem-solving.
+
+## Conclusion
+Success in **${topic}** is the product of disciplined daily habits. Trust your preparation, remain patient with difficult concepts, and keep striving forward.
+`;
+    return { title, body };
+  }
+
+  // Default: Custom Semantic Grounding
+  const title = `The Definitive Guide to ${tCap}: Principles, Strategies & Key Insights`;
+  const body = `# ${title}
+
+Exploring and mastering **${topic}** requires a clear, structured framework that breaks down complex aspects into practical, actionable insights. Whether you are conducting research, planning an implementation, or building expertise as **${audience || 'readers'}**, having an organized overview enables you to achieve tangible results.
+
+## 1. Understanding the Core Foundations of ${tCap}
+Every successful exploration begins with clarity around fundamental principles:
+- **Defining the Scope:** Understand what drives **{topic}** and why it matters in today's context.
+- **Key Drivers of Success:** Identify the core variables, including **${kwStr}**, that directly influence outcomes.
+- **Setting Benchmarks:** Establish clear metrics to measure progress and avoid common misconceptions early on.
+
+## 2. Step-by-Step Strategic Framework & Execution
+Moving from conceptual theory to real-world impact:
+1. **Preparation & Planning:** Gather reliable data, align key resources, and identify potential bottlenecks before taking action.
+2. **Practical Execution:** Deploy structured, disciplined steps and test your methods against real-world feedback.
+3. **Refinement & Scaling:** Review results regularly, double down on what works, and eliminate unnecessary friction.
+
+## 3. Common Roadblocks & How to Overcome Them
+- **Avoid Overcomplication:** The most sustainable approaches are built on simple, repeatable habits rather than overly complex systems.
+- **Embrace Continuous Learning:** Stay adaptable as modern methodologies and industry standards continue to evolve.
+
+## Conclusion
+Success with **${topic}** is an ongoing journey of deliberate practice and refinement. Apply these principles consistently, stay curious, and keep compounding your knowledge.
+`;
+  return { title, body };
+};
+
+const buildDomainSocialCaptions = (topic, platform, tone, variant) => {
+  const ctx = detectDomain(topic);
+  const { domain, emojis, hashtags } = ctx;
+  const tCap = topic.charAt(0).toUpperCase() + topic.slice(1);
+  const tagText = hashtags.slice(0, 4).join(' ');
+
+  if (domain === 'food') {
+    if (platform === 'twitter') {
+      const tweets = [
+        `Nothing cures a long day faster than a steaming plate of ${topic}. ${emojis[0]} What's your comfort food? ${tagText}`,
+        `Cooking tip for ${topic}: Low flame and patience make all the difference for spices! 🥘✨`,
+        `Homemade ${topic} easily beats most takeout restaurants if you nail the seasoning balance. 🍽️`
+      ];
+      return tweets[variant % tweets.length];
+    }
+    if (platform === 'instagram') {
+      return `${emojis[0]} Craving authentic ${tCap}? ${emojis[1]}\n\nNothing beats freshly prepared ${topic} made with real spices and slow cooking!\n\n👨‍🍳 Secret tip: Let it rest for 5 minutes before serving to let flavors lock in!\n\nDouble tap if you love great food! ❤️\n\n${hashtags.join('\n')}`;
+    }
+    if (platform === 'linkedin') {
+      return `What cooking ${topic} taught me about leadership and patience:\n\nIn both culinary arts and professional execution, you cannot skip stages. Rushing ingredients produces mediocre results; respecting timing, preparation, and patience creates excellence.\n\nWhat is an outside-of-work passion that sharpens your professional focus?\n\n${tagText}`;
+    }
+    return `Hey food lovers! ${emojis[0]} Who else loves ${topic}? Made a fresh batch and the aroma is filling the whole kitchen! How do you like yours prepared? Tell me in the comments! 👇😋`;
+  }
+
+  if (domain === 'sports') {
+    if (platform === 'twitter') {
+      const tweets = [
+        `The intensity in ${topic} right now is on another level! What a match! 🏏🔥 ${tagText}`,
+        `Key takeaway from ${topic}: Tactical discipline under high pressure separates champions from runners-up. 🏆`,
+        `Who was your MVP in ${topic} this week? Let's settle the debate in the replies! 👇⚡`
+      ];
+      return tweets[variant % tweets.length];
+    }
+    if (platform === 'instagram') {
+      return `${emojis[0]} Game day energy! Let's talk about ${tCap}! ${emojis[1]}\n\nWhen the stakes are high, it all comes down to mindset, tactical positioning, and trusting your preparation.\n\nDrop your match predictions below! 👇🔥\n\n${hashtags.join('\n')}`;
+    }
+    if (platform === 'linkedin') {
+      return `Leadership lessons from ${tCap}:\n\nHigh-performance teams mirror championship athletic squads:\n• Clear role clarity\n• Unwavering trust under pressure\n• Quick recovery from tactical setbacks\n\nHow does your team foster resilience when stakes are high?\n\n${tagText}`;
+    }
+    return `What a game! ${emojis[0]} Watching ${topic} had me on the edge of my seat! What was your favorite moment? Share your thoughts below! 👇🏆`;
+  }
+
+  if (domain === 'medical') {
+    if (platform === 'twitter') {
+      const tweets = [
+        `Friendly health reminder: Preventive care for ${topic} is always easier and cheaper than emergency treatment. 🩺✨`,
+        `Don't ignore subtle warning signs in ${topic}. When in doubt, always consult a qualified professional. 💡`,
+        `Consistency in daily hygiene and routine checkups: the two best investments for ${topic}. 🦷🏥`
+      ];
+      return tweets[variant % tweets.length];
+    }
+    if (platform === 'instagram') {
+      return `${emojis[0]} Prioritizing your health: Let's talk about ${tCap} ${emojis[1]}\n\nTaking proactive care of your health today prevents painful and costly treatments tomorrow. Daily hygiene and timely doctor checkups are key!\n\n💡 Reminder: Don't wait for symptoms to worsen before seeking professional advice.\n\nDouble tap to share this health reminder with someone you care about! ❤️\n\n${hashtags.join('\n')}`;
+    }
+    if (platform === 'linkedin') {
+      return `Innovations in modern healthcare and patient care around ${tCap}:\n\nDigital record keeping, streamlined appointment workflows, and patient-first clinical communication are elevating healthcare delivery standards.\n\nHow is your organization advancing patient experience this year?\n\n${tagText}`;
+    }
+    return `Health tip of the day! ${emojis[0]} Taking care of ${topic} is so important for you and your family. Have you scheduled your routine checkup this year? Let's discuss below! 👇🏥`;
+  }
+
+  // General Topic Social Captions
+  if (platform === 'twitter') {
+    const tweets = [
+      `The secret to mastering ${topic}? Stop searching for shortcuts and execute the core fundamentals consistently. 🧵👇 ${tagText}`,
+      `3 simple rules for ${topic}:\n\n1. Start with clear goals\n2. Focus on actionable steps\n3. Measure real progress\n\nSave this. 📌`,
+      `Action creates clarity. If you've been putting off ${topic}, take the first small step today. ⚡`
+    ];
+    return tweets[variant % tweets.length];
+  }
+  if (platform === 'instagram') {
+    return `${emojis[0]} Deep dive into ${tCap} ${emojis[1]}\n\nWhen exploring ${topic}, focusing on proven fundamentals and practical execution is what creates lasting results:\n\n1️⃣ Clarify your primary goal\n2️⃣ Break down the process into actionable steps\n3️⃣ Stay consistent and evaluate progress\n\nDouble tap if this resonates with your journey! ❤️\n\n${hashtags.join('\n')}`;
+  }
+  if (platform === 'linkedin') {
+    return `Strategic insights on ${tCap} for modern professionals:\n\nSuccess with ${topic} requires balancing visionary planning with disciplined day-to-day execution. Teams and individuals who institutionalize these methods achieve measurable compounding advantages.\n\nHow are you approaching ${topic} in your workflows?\n\n${tagText}`;
+  }
+  return `Hey everyone! 👋 Wanted to share a quick insight on ${topic} that really helped simplify things for me. What has been your experience with this? Let's chat in the comments! 👇💬`;
+};
+
+// 1. LOCAL BLOG GENERATOR
 export const generateLocalBlog = (topic, keywordsString, tone, length, audience) => {
   const keywords = keywordsString
     ? keywordsString.split(',').map(k => k.trim()).filter(k => k.length > 0)
     : [];
-  
-  const industry = detectIndustry(topic);
 
-  const selectedIndustry = industryData[industry];
-  const dataset = localDataset[industry];
-  const capitalizedTopic = topic.charAt(0).toUpperCase() + topic.slice(1);
+  const ctx = detectDomain(topic);
+  const article = buildDomainSpecificBlog(topic, ctx.domain, audience, keywords);
 
-  // Generate Title related directly to user topic
-  const titleTemplates = [
-    `The Ultimate Guide to ${capitalizedTopic}`,
-    `Why ${capitalizedTopic} is the Key to Success`,
-    `How to Master ${capitalizedTopic}: A Practical Approach`,
-    `Demystifying ${capitalizedTopic}: What You Need to Know`,
-    `5 Strategic Ways to Optimize ${capitalizedTopic} for Better Results`
-  ];
-  const title = titleTemplates[Math.floor(Math.random() * titleTemplates.length)];
-
-  // Define sections based on length
-  let numSections = 3;
-  if (length === 'medium') numSections = 3;
-  else if (length === 'long') numSections = 4;
-
-  let blogMarkdown = `# ${title}\n\n`;
-  
-  // 1. Intro Paragraph (Dynamically weave the topic)
-  let intro = `When it comes to **${topic}**, many ${audience || 'readers'} find themselves searching for a clear, actionable roadmap. `;
-  intro += `Developing a successful process around **${topic}** requires a combination of strategic planning, structural execution, and constant evaluation. `;
-  if (keywords.length > 0) {
-    intro += `To achieve optimal results, you must pay close attention to core factors like **${keywords[0]}** and how they feed into your wider goals. `;
-  }
-  intro += `In this article, we will break down the essential guidelines to help you navigate this space and succeed.`;
-  blogMarkdown += `${applyToneModifications(intro, tone)}\n\n`;
-
-  // 2. Body Sections (Dynamically customized to match the user's topic)
-  for (let i = 0; i < numSections; i++) {
-    const datasetAngle = dataset.angles[i % dataset.angles.length];
-    const datasetAction = dataset.actions[i % dataset.actions.length];
-    const headingsByNiche = [
-      `Understanding the Fundamentals of ${capitalizedTopic}`,
-      `Key Challenges in Implementing ${capitalizedTopic}`,
-      `Actionable Best Practices for ${capitalizedTopic}`,
-      `The Future Scope and Evolution of ${capitalizedTopic}`
-    ];
-    const headingText = headingsByNiche[i % headingsByNiche.length];
-    
-    blogMarkdown += `## ${i + 1}. ${headingText}\n\n`;
-
-    // Compose custom related paragraphs
-    let bodyPara1 = selectedIndustry.paragraphs[i % selectedIndustry.paragraphs.length];
-    // Ingress the user topic dynamically
-    bodyPara1 = `To build a solid approach for **${topic}**, start with a focused ${datasetAngle}. ` + bodyPara1;
-    
-    if (keywords.length > 0) {
-      const kw = keywords[(i + 1) % keywords.length] || keywords[0];
-      bodyPara1 += ` Furthermore, integrating **${kw}** within your **${topic}** system ensures better reliability and performance.`;
-    }
-
-    let bodyPara2 = `Consistency is the main multiplier here. Managing **${topic}** is never a one-time setup; it is a recurring workflow. A useful next step is to ${datasetAction}, then refine your strategy based on evidence instead of guesswork.`;
-    if (length === 'long') {
-      bodyPara2 += ` Always analyze metrics weekly. Focus on long-term values, document your lessons, and share these insights with your team to stay aligned.`;
-    }
-
-    blogMarkdown += `${applyToneModifications(bodyPara1, tone)}\n\n`;
-    blogMarkdown += `${applyToneModifications(bodyPara2, tone)}\n\n`;
-  }
-
-  // 3. Conclusion Paragraph (Dynamically weave the topic)
-  blogMarkdown += `## Conclusion\n\n`;
-  let concl = `Ultimately, mastering **${topic}** is a progressive journey that requires persistent work. By focusing on the strategies detailed above${keywords.length > 0 ? `, particularly **${keywords.join(', ')}**,` : ''} you will be well-equipped to achieve your goals. Start small, review feedback regularly, and watch your metrics compound.`;
-  blogMarkdown += `${applyToneModifications(concl, tone)}\n`;
-
-  const words = wordCount(blogMarkdown);
-
-  // Generate Meta Description directly related to user topic
-  const metaDesc = `Discover the ultimate guide on ${topic}. Learn how to optimize results, overcome key challenges, and integrate ${keywords[0] || 'proven strategies'} into your workflow.`;
+  const finalBody = applyToneModifications(article.body, tone);
+  const words = wordCount(finalBody);
+  const metaDesc = `Discover the ultimate guide on ${topic}. Learn key strategies, practical tips, and actionable advice for ${audience || 'readers'}.`;
 
   return {
-    title,
-    content: blogMarkdown,
-    metaDescription: metaDesc,
+    title: article.title,
+    content: finalBody,
+    metaDescription: metaDesc.slice(0, 155),
     wordCount: words,
-    readingTime: readingTime(blogMarkdown),
-    keywordsSuggested: keywords.length > 0 ? keywords : [topic, dataset.angles[0], 'strategy', 'guide'],
+    readingTime: readingTime(finalBody),
+    keywordsSuggested: keywords.length > 0 ? keywords : [topic.toLowerCase(), ctx.domain, 'guide'],
     source: 'local'
   };
 };
@@ -551,14 +796,10 @@ Return only the article markdown with a clear H1, H2 sections, practical details
 export const generateLocalSocialCaptions = (topic, platforms, tone, count = 3) => {
   const results = {};
 
-  // Detect industry dynamically from topic
-  const industry = detectIndustry(topic);
-  const tags = getTopicHashtags(topic, industry);
-
   platforms.forEach(platform => {
     const list = [];
     for (let i = 0; i < count; i++) {
-      list.push(buildLocalSocialCaption(topic, platform.toLowerCase(), tone, i, tags));
+      list.push(buildDomainSocialCaptions(topic, platform.toLowerCase(), tone, i));
     }
     results[platform] = list;
   });
@@ -725,12 +966,12 @@ export const analyzeSEO = async (content, targetKeyword, metaDescription = '') =
 };
 
 // 4. KEYWORDS & HASHTAGS GENERATOR
-export const generateKeywords = async (topic, intent) => {
+export const generateKeywords = async (topic, intent = 'informational') => {
   const preferPython = localStorage.getItem('creator_prefer_python') !== 'false';
   if (preferPython) {
     const pyResult = await callPythonApi('/keywords', { topic, intent });
     if (pyResult) {
-      const primary = pyResult.primary || (pyResult.keywords && pyResult.keywords[0]) || { kw: topic, vol: '1.2K - 5.5K (Est.)', diff: 'Medium', cpc: '$1.45' };
+      const primary = pyResult.primary || (pyResult.keywords && pyResult.keywords[0]) || { kw: topic, vol: '14.5K - 45.2K', diff: 'Medium', cpc: '$1.85' };
       const secondary = pyResult.secondary || (pyResult.keywords && pyResult.keywords.slice(1)) || [];
       const hashtags = pyResult.hashtags || { highVolume: [], mediumVolume: [], lowVolume: [] };
       return {
@@ -742,82 +983,69 @@ export const generateKeywords = async (topic, intent) => {
     }
   }
 
-  const normTopic = normalizeTopic(topic);
-  
-  // Custom keyword databases grouped by industry dynamically
-  const nicheDb = {
-    tech: [
-      { kw: 'latest software trends', vol: '12K', diff: 'Medium', cpc: '$2.50' },
-      { kw: 'ai automation tools', vol: '8.4K', diff: 'High', cpc: '$4.10' },
-      { kw: 'how to learn coding online', vol: '22K', diff: 'Low', cpc: '$0.80' },
-      { kw: 'best cloud infrastructure', vol: '5.2K', diff: 'High', cpc: '$6.50' },
-      { kw: 'digital transformation strategy', vol: '4.1K', diff: 'Medium', cpc: '$5.20' }
-    ],
-    marketing: [
-      { kw: 'content marketing strategy', vol: '18K', diff: 'High', cpc: '$3.80' },
-      { kw: 'seo tools for beginners', vol: '14K', diff: 'Medium', cpc: '$1.90' },
-      { kw: 'social media growth hacks', vol: '9.6K', diff: 'Low', cpc: '$1.20' },
-      { kw: 'email campaign optimization', vol: '4.8K', diff: 'Medium', cpc: '$3.40' },
-      { kw: 'b2b lead generation tips', vol: '6.5K', diff: 'High', cpc: '$5.80' }
-    ],
-    finance: [
-      { kw: 'how to start investing', vol: '45K', diff: 'High', cpc: '$2.10' },
-      { kw: 'budget planning template', vol: '33K', diff: 'Medium', cpc: '$1.10' },
-      { kw: 'passive income ideas 2026', vol: '28K', diff: 'High', cpc: '$1.60' },
-      { kw: 'safe stocks to buy', vol: '19K', diff: 'Medium', cpc: '$2.40' },
-      { kw: 'cryptocurrency trading guide', vol: '54K', diff: 'High', cpc: '$1.80' }
-    ],
-    health: [
-      { kw: 'home workout no equipment', vol: '60K', diff: 'Low', cpc: '$0.40' },
-      { kw: 'healthy meal prep ideas', vol: '40K', diff: 'Medium', cpc: '$0.90' },
-      { kw: 'how to reduce stress fast', vol: '18K', diff: 'Low', cpc: '$0.75' },
-      { kw: 'benefits of intermittent fasting', vol: '27K', diff: 'Medium', cpc: '$1.10' },
-      { kw: 'improving sleep quality naturally', vol: '8.8K', diff: 'Low', cpc: '$1.30' }
-    ]
-  };
-
-  // Find matches
-  let selectedNiche = 'marketing';
-  if (/tech|software|ai|programming|code|web|app|developer|cloud|data/.test(normTopic)) selectedNiche = 'tech';
-  else if (/marketing|seo|brand|sales|growth|traffic|social/.test(normTopic)) selectedNiche = 'marketing';
-  else if (/finance|money|invest|crypto|budget|stocks|wealth/.test(normTopic)) selectedNiche = 'finance';
-  else if (/health|fitness|diet|wellness|nutrition|workout|sleep/.test(normTopic)) selectedNiche = 'health';
+  const topicClean = (topic || '').trim().toLowerCase();
+  const tTitle = topic.charAt(0).toUpperCase() + topic.slice(1);
+  const words = topicClean.split(/[^a-zA-Z0-9]+/).filter(w => w.length > 2);
+  const mainWord = words[0] || 'Guide';
 
   // Primary Keyword
   const primary = {
-    kw: topic.trim().toLowerCase(),
-    vol: '1.2K - 5.5K (Est.)',
+    kw: topicClean,
+    vol: '14.5K - 45.2K',
     diff: 'Medium',
-    cpc: '$1.45'
+    cpc: '$1.85'
   };
 
-  // Secondary Keywords based on niche and search intent
-  const preDefinedList = nicheDb[selectedNiche] || nicheDb.marketing;
-  const secondary = preDefinedList.map(item => {
-    let modifiedKw = item.kw;
-    if (intent === 'transactional' && !modifiedKw.startsWith('buy') && !modifiedKw.includes('best')) {
-      modifiedKw = 'best ' + modifiedKw;
-    } else if (intent === 'informational' && !modifiedKw.startsWith('how') && !modifiedKw.startsWith('what')) {
-      modifiedKw = 'understanding ' + modifiedKw;
-    }
-    return {
-      kw: modifiedKw,
-      vol: item.vol,
-      diff: item.diff,
-      cpc: item.cpc
-    };
-  });
+  // Intent-based dynamic secondary keywords
+  let secondaryTemplates = [];
+  let vols = [];
+  let diffs = [];
+  let cpcs = [];
 
-  // Hashtags
+  if (intent === 'transactional') {
+    secondaryTemplates = [
+      `best ${topicClean} services`,
+      `buy ${topicClean} online`,
+      `top rated ${topicClean} deals`,
+      `affordable ${topicClean} packages`,
+      `${topicClean} price and comparison`,
+      `hire ${topicClean} experts`
+    ];
+    diffs = ['High', 'Medium', 'High', 'Low', 'Medium', 'Low'];
+    vols = ['18.2K', '29.5K', '12.0K', '34.1K', '22.8K', '8.5K'];
+    cpcs = ['$3.40', '$4.20', '$2.80', '$1.90', '$2.50', '$3.80'];
+  } else {
+    secondaryTemplates = [
+      `how to master ${topicClean}`,
+      `${topicClean} step by step guide`,
+      `best tips for ${topicClean}`,
+      `${topicClean} for beginners`,
+      `common mistakes in ${topicClean}`,
+      `future trends in ${topicClean}`
+    ];
+    diffs = ['Low', 'Medium', 'Low', 'Medium', 'High', 'Medium'];
+    vols = ['42.0K', '31.5K', '55.0K', '68.2K', '19.4K', '25.0K'];
+    cpcs = ['$0.95', '$1.40', '$1.10', '$0.85', '$1.60', '$2.10'];
+  }
+
+  const secondary = secondaryTemplates.map((kw, i) => ({
+    kw,
+    vol: vols[i % vols.length],
+    diff: diffs[i % diffs.length],
+    cpc: cpcs[i % cpcs.length]
+  }));
+
+  const tagRoot = topicClean.replace(/[^a-zA-Z0-9]/g, '');
   const hashtags = {
-    highVolume: [`#${topic.replace(/\s+/g, '')}`, '#trending', '#success', '#growth'],
-    mediumVolume: [`#${topic.replace(/\s+/g, '')}Strategy`, '#businessgoals', '#expertadvice', '#dailyinsights'],
-    lowVolume: [`#learn${topic.replace(/\s+/g, '')}`, '#nichemarketing', '#worksmart', '#stepbystep']
+    highVolume: [`#${tTitle.replace(/\s+/g, '')}`, `#${mainWord}Daily`, '#TrendingNow', '#ExplorePage', '#ViralPost'],
+    mediumVolume: [`#${tTitle.replace(/\s+/g, '')}Tips`, `#${tTitle.replace(/\s+/g, '')}Guide`, `#${mainWord}Lovers`, '#BestPractices', '#ProTips'],
+    lowVolume: [`#${tTitle.replace(/\s+/g, '')}ForBeginners`, `#Learn${mainWord}`, `#${tTitle.replace(/\s+/g, '')}Community`, '#ActionableAdvice']
   };
 
   return {
     primary,
     secondary,
+    keywords: [primary, ...secondary],
     hashtags
   };
 };
