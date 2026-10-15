@@ -183,17 +183,26 @@ export default function SocialGenerator({ placeholders, onSaveHistory }) {
             <div className="form-group">
               <label className="form-label">Brand Tone</label>
               <div className="tone-grid">
-                {['Hype', 'Professional', 'Casual', 'Witty', 'Bold'].map(tName => (
-                  <label key={tName}>
+                {[
+                    { id: 'Professional', label: 'Professional', icon: '💼' },
+                    { id: 'Hype', label: 'Hype / Viral', icon: '⚡' },
+                    { id: 'Casual', label: 'Casual', icon: '☕' },
+                    { id: 'Witty', label: 'Witty', icon: '😏' },
+                    { id: 'Persuasive', label: 'Persuasive', icon: '🚀' },
+                    { id: 'Bold', label: 'Bold', icon: '🔥' },
+                    { id: 'Storytelling', label: 'Storytelling', icon: '🎙️' },
+                    { id: 'Inspirational', label: 'Inspirational', icon: '🌟' }
+                  ].map(item => (
+                  <label key={item.id}>
                     <input 
                       type="radio" 
                       name="tone" 
                       className="tone-radio" 
-                      value={tName} 
-                      checked={tone === tName}
-                      onChange={() => setTone(tName)}
+                      value={item.id} 
+                      checked={tone === item.id}
+                      onChange={() => setTone(item.id)}
                     />
-                    <span className="tone-label">{tName}</span>
+                    <span className="tone-label"><span className="tone-icon">{item.icon}</span> {item.label}</span>
                   </label>
                 ))}
               </div>

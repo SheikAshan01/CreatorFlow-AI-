@@ -161,17 +161,26 @@ export default function BlogGenerator({ placeholders, onSaveHistory, setTab, set
             <div className="form-group">
               <label className="form-label">Tone of Voice</label>
               <div className="tone-grid">
-                {['Informative', 'Professional', 'Casual', 'Witty', 'Persuasive'].map(tName => (
-                  <label key={tName} className="tone-container">
+                {[
+                    { id: 'Professional', label: 'Professional', icon: '💼' },
+                    { id: 'Informative', label: 'Informative', icon: '📖' },
+                    { id: 'Casual', label: 'Casual', icon: '☕' },
+                    { id: 'Witty', label: 'Witty', icon: '😏' },
+                    { id: 'Persuasive', label: 'Persuasive', icon: '🚀' },
+                    { id: 'Bold', label: 'Bold', icon: '🔥' },
+                    { id: 'Storytelling', label: 'Storytelling', icon: '🎙️' },
+                    { id: 'Inspirational', label: 'Inspirational', icon: '🌟' }
+                  ].map(item => (
+                  <label key={item.id} className="tone-container">
                     <input 
                       type="radio" 
                       name="tone" 
                       className="tone-radio" 
-                      value={tName} 
-                      checked={tone === tName}
-                      onChange={() => setTone(tName)}
+                      value={item.id} 
+                      checked={tone === item.id}
+                      onChange={() => setTone(item.id)}
                     />
-                    <span className="tone-label">{tName}</span>
+                    <span className="tone-label"><span className="tone-icon">{item.icon}</span> {item.label}</span>
                   </label>
                 ))}
               </div>
@@ -203,8 +212,8 @@ export default function BlogGenerator({ placeholders, onSaveHistory, setTab, set
 
           {!loading && result && (
             <div className="output-container animate-fade-in">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <div style={{ display: 'flex', gap: '4px' }}>
+              <div className="output-header">
+                <div className="output-subtabs">
                   <button 
                     className={`social-tab-btn ${activeSubTab === 'preview' ? 'active' : ''}`}
                     onClick={() => setActiveSubTab('preview')}
@@ -225,7 +234,7 @@ export default function BlogGenerator({ placeholders, onSaveHistory, setTab, set
                   </button>
                 </div>
 
-                <div className="btn-group">
+                <div className="btn-group output-actions">
                   <button className="btn btn-secondary btn-icon-only" title="Copy to Clipboard" onClick={copyToClipboard}>
                     <Copy size={15} />
                   </button>

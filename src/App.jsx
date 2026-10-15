@@ -10,7 +10,8 @@ import {
   Sparkles,
   User,
   X,
-  Copy
+  Copy,
+  Menu
 } from 'lucide-react';
 import { renderSafeMarkdown } from './services/markdown';
 
@@ -202,6 +203,7 @@ const nichePlaceholders = {
 
 export default function App() {
   const [tab, setTab] = useState('dashboard');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [history, setHistory] = useState(() => {
     const savedHistory = localStorage.getItem('creatorflow_history');
     if (!savedHistory) return [];
@@ -295,13 +297,44 @@ export default function App() {
 
   return (
     <div className="app-container">
+      {/* Mobile Top Navbar */}
+      <div className="mobile-topbar">
+        <button 
+          className="mobile-menu-btn" 
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label="Toggle Navigation Menu"
+        >
+          {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+
+        <div className="mobile-brand" onClick={() => { setTab('dashboard'); setMobileMenuOpen(false); }}>
+          <div className="logo-icon">
+            <Sparkles size={16} style={{ color: '#fff' }} />
+          </div>
+          <span className="logo-text">CreatorFlow AI</span>
+        </div>
+
+        <div className="mobile-user-badge">
+          <User size={13} style={{ color: 'var(--primary)' }} />
+          <span>{profileName}</span>
+        </div>
+      </div>
+
+      {/* Mobile Backdrop Overlay */}
+      {mobileMenuOpen && (
+        <div className="sidebar-backdrop" onClick={() => setMobileMenuOpen(false)} />
+      )}
+
       {/* Sidebar Navigation */}
-      <aside className="sidebar">
+      <aside className={`sidebar ${mobileMenuOpen ? 'mobile-open' : ''}`}>
         <div className="sidebar-logo">
           <div className="logo-icon">
             <Sparkles size={20} style={{ color: '#fff' }} />
           </div>
           <span className="logo-text">CreatorFlow AI</span>
+          <button className="sidebar-close-btn" onClick={() => setMobileMenuOpen(false)} aria-label="Close Menu">
+            <X size={18} />
+          </button>
         </div>
 
         <nav className="sidebar-menu">
@@ -309,7 +342,7 @@ export default function App() {
             <div key={item.id} className="menu-item">
               <button 
                 className={`menu-btn ${tab === item.id ? 'active' : ''}`}
-                onClick={() => setTab(item.id)}
+                onClick={() => { setTab(item.id); setMobileMenuOpen(false); }}
               >
                 {item.icon}
                 <span>{item.label}</span>

@@ -718,13 +718,125 @@ const buildDomainSocialCaptions = (topic, platform, tone, variant) => {
 };
 
 // 1. LOCAL BLOG GENERATOR
+
+const applyDeepToneStyling = (article, tone, topic, audience) => {
+  const tCap = topic.charAt(0).toUpperCase() + topic.slice(1);
+  const toneLower = (tone || 'professional').trim().toLowerCase();
+
+  let introHook = '';
+  let conclHook = '';
+  let headingsMap = [];
+
+  switch (toneLower) {
+    case 'casual':
+      introHook = `Let's be completely real for a minute—navigating **${topic}** can feel like trying to solve a puzzle in the dark. But here is the good news: it doesn't have to be complicated! Whether you're just getting started or looking for a clearer path as ${audience || 'a curious reader'}, we're breaking it all down in simple, everyday English.`;
+      conclHook = `At the end of the day, getting good at **${topic}** isn't about being perfect—it's about showing up consistently and having fun along the way. Take that first step today, keep it simple, and watch how quickly things start falling into place!`;
+      headingsMap = [
+        `1. The Basics You Actually Need to Know`,
+        `2. Practical Tricks That Actually Work for ${tCap}`,
+        `3. Rookie Mistakes You Can Easily Avoid`
+      ];
+      break;
+
+    case 'witty':
+      introHook = `Spoiler alert: 90% of what you've heard about **${topic}** is probably overcomplicated fluff designed to sound smart. If you're tired of dense corporate jargon and just want to know what actually works in the real world (without losing your sanity), welcome aboard.`;
+      conclHook = `So, what's the big moral of the story? Mastering **${topic}** won't require a PhD or sacrificing your weekends—just a healthy dose of common sense and the willingness to ignore bad advice. Now go put this into practice before you get distracted!`;
+      headingsMap = [
+        `1. The Elephant in the Room with ${tCap}`,
+        `2. What Actually Moves the Needle (Minus the Fluff)`,
+        `3. Ridiculous Mistakes People Keep Making`
+      ];
+      break;
+
+    case 'persuasive':
+      introHook = `Here is a hard truth: if you are not proactively optimizing your approach to **${topic}**, you are silently leaving massive value, growth, and results on the table. The landscape is moving faster than ever, and those who take decisive action right now are the ones who will dominate.`;
+      conclHook = `The choice is yours: continue second-guessing, or seize the competitive edge that **${topic}** provides. Don't wait for the 'perfect moment'—take charge, deploy these strategies today, and unlock the results you deserve!`;
+      headingsMap = [
+        `1. Why You Can No Longer Afford to Ignore ${tCap}`,
+        `2. The High-Impact Execution Blueprint`,
+        `3. The Strategic Levers That Maximize Your ROI`
+      ];
+      break;
+
+    case 'bold':
+      introHook = `Unpopular opinion: the standard advice surrounding **${topic}** is painfully outdated and keeps most people stuck in mediocrity. If you want extraordinary, breakthrough results, you have to stop following the average playbook.`;
+      conclHook = `Winners execute while everyone else overanalyzes. If you want different results with **${topic}**, you have to act differently. No excuses, no shortcuts—commit fully and own the outcome!`;
+      headingsMap = [
+        `1. Unlearning the Outdated Myths of ${tCap}`,
+        `2. The Unfiltered Reality of Execution`,
+        `3. Cutting the Noise: The Contrarian Playbook`
+      ];
+      break;
+
+    case 'storytelling':
+      introHook = `Picture this: you are standing at the starting line of your journey with **${topic}**, wondering if the climb is truly worth the view. Every master in this space once started exactly where you are sitting right now—with questions, uncertainty, and a desire to build something meaningful.`;
+      conclHook = `Every great transformation is simply a collection of small, brave moments strung together. Your chapter with **${topic}** is waiting to be written. Turn the page, trust the process, and embrace the story ahead!`;
+      headingsMap = [
+        `1. Where the Journey Begins: Setting the Stage`,
+        `2. The Turning Point: Overcoming the Hard Days`,
+        `3. Hard-Won Lessons from the Trenches`
+      ];
+      break;
+
+    case 'inspirational':
+      introHook = `Every monumental achievement in human history started with a single spark of belief. Your ambition to excel at **${topic}** is not merely about learning a skill—it is an invitation to unlock your highest potential, expand your horizons, and create a lasting impact.`;
+      conclHook = `You have everything inside you required to master **${topic}**. Believe in your vision, celebrate your progress, and let your passion illuminate the way. Your greatest chapter begins today!`;
+      headingsMap = [
+        `1. Igniting Your Vision & Purpose in ${tCap}`,
+        `2. Cultivating the Daily Discipline for Greatness`,
+        `3. Rising Above Roadblocks with Unshakable Focus`
+      ];
+      break;
+
+    case 'informative':
+      introHook = `A comprehensive, data-backed examination of **${topic}** reveals several critical pillars that dictate success. For ${audience || 'analysts and practitioners'}, establishing an evidence-based roadmap is essential for building structured, repeatable outcomes.`;
+      conclHook = `In summary, building competence in **${topic}** requires a commitment to empirical validation, systematic iteration, and measured execution. Integrate these benchmarks into your workflow to ensure steady, predictable results.`;
+      headingsMap = [
+        `1. Theoretical Foundations & Key Definitions`,
+        `2. Methodological Framework & Guidelines`,
+        `3. Comparative Analysis & Performance Metrics`
+      ];
+      break;
+
+    default: // Professional
+      introHook = `In today's fast-moving environment, establishing a strategic command of **${topic}** is a vital differentiator. For ${audience || 'professionals and decision-makers'}, aligning core methodologies with disciplined execution is key to achieving sustainable competitive advantage.`;
+      conclHook = `Ultimately, leadership in **${topic}** is driven by consistency, strategic clarity, and data-driven refinement. By embedding these principles into your daily operations, you establish a resilient foundation for long-term growth.`;
+      headingsMap = [
+        `1. Strategic Alignment & Core Principles of ${tCap}`,
+        `2. Operational Execution & Workflow Optimization`,
+        `3. Performance Benchmarking & Risk Mitigation`
+      ];
+      break;
+  }
+
+  let content = article.body;
+  const match = content.match(/^#\s+[^\n]+\n\n([\s\S]+?)\n\n##\s+1\./);
+  if (match) {
+    content = content.replace(match[1], introHook);
+  }
+
+  for (let i = 0; i < 3; i++) {
+    const reg = new RegExp(`##\\s+${i + 1}\\.\\s+[^\\n]+`);
+    content = content.replace(reg, `## ${headingsMap[i]}`);
+  }
+
+  const conclMatch = content.match(/##\s+Conclusion\n\n([\s\S]+)$/);
+  if (conclMatch) {
+    content = content.replace(conclMatch[1], conclHook);
+  }
+
+  return { title: article.title, body: content };
+};
+
+
 export const generateLocalBlog = (topic, keywordsString, tone, length, audience) => {
   const keywords = keywordsString
     ? keywordsString.split(',').map(k => k.trim()).filter(k => k.length > 0)
     : [];
 
   const ctx = detectDomain(topic);
-  const article = buildDomainSpecificBlog(topic, ctx.domain, audience, keywords);
+  let article = buildDomainSpecificBlog(topic, ctx.domain, audience, keywords);
+  article = applyDeepToneStyling(article, tone, topic, audience);
 
   const finalBody = applyToneModifications(article.body, tone);
   const words = wordCount(finalBody);

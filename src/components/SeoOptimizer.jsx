@@ -83,8 +83,8 @@ export default function SeoOptimizer({ placeholders, preloadedSeoContent, clearP
             <div className="form-group">
               <label className="form-label">Meta Description Draft (Optional)</label>
               <textarea 
-                className="form-input" 
-                style={{ minHeight: '60px', height: '60px' }}
+                className="form-textarea" 
+                style={{ minHeight: '70px', height: '70px', resize: 'vertical' }}
                 placeholder="Brief summary shown in Google search results (120-160 characters)..." 
                 value={metaDesc}
                 onChange={(e) => setMetaDesc(e.target.value)}

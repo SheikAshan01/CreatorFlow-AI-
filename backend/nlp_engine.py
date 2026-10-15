@@ -717,6 +717,95 @@ Success with **{topic}** is an ongoing journey of deliberate practice and refine
 # =========================================================================
 # 1. MAIN BLOG GENERATOR
 # =========================================================================
+
+def apply_tone_styling(article: Dict[str, str], tone: str, topic: str, audience: str) -> Dict[str, str]:
+    t_cap = topic.title()
+    tone_lower = (tone or "professional").strip().lower()
+
+    if tone_lower == "casual":
+        intro_hook = f"Let's be completely real for a minute—navigating **{topic}** can feel like trying to solve a puzzle in the dark. But here is the good news: it doesn't have to be complicated! Whether you're just getting started or looking for a clearer path as {audience}, we're breaking it all down in simple, everyday English."
+        concl_hook = f"At the end of the day, getting good at **{topic}** isn't about being perfect—it's about showing up consistently and having fun along the way. Take that first step today, keep it simple, and watch how quickly things start falling into place!"
+        headings_map = [
+            f"1. The Basics You Actually Need to Know",
+            f"2. Practical Tricks That Actually Work for {t_cap}",
+            f"3. Rookie Mistakes You Can Easily Avoid"
+        ]
+    elif tone_lower == "witty":
+        intro_hook = f"Spoiler alert: 90% of what you've heard about **{topic}** is probably overcomplicated fluff designed to sound smart. If you're tired of dense jargon and just want to know what actually works in the real world (without losing your sanity), welcome aboard."
+        concl_hook = f"So, what's the big takeaway? Mastering **{topic}** won't require a PhD or sacrificing your weekends—just a healthy dose of common sense and the willingness to ignore bad advice. Now go put this into practice before you get distracted!"
+        headings_map = [
+            f"1. The Elephant in the Room with {t_cap}",
+            f"2. What Actually Moves the Needle (Minus the Fluff)",
+            f"3. Ridiculous Mistakes People Keep Making"
+        ]
+    elif tone_lower == "persuasive":
+        intro_hook = f"Here is a hard truth: if you are not proactively optimizing your approach to **{topic}**, you are silently leaving massive value, growth, and results on the table. The landscape is moving faster than ever, and those who take decisive action right now are the ones who will dominate."
+        concl_hook = f"The choice is yours: continue second-guessing, or seize the competitive edge that **{topic}** provides. Don't wait for the 'perfect moment'—take charge, deploy these strategies today, and unlock the results you deserve!"
+        headings_map = [
+            f"1. Why You Can No Longer Afford to Ignore {t_cap}",
+            f"2. The High-Impact Execution Blueprint",
+            f"3. The Strategic Levers That Maximize Your ROI"
+        ]
+    elif tone_lower == "bold":
+        intro_hook = f"Unpopular opinion: the standard advice surrounding **{topic}** is painfully outdated and keeps most people stuck in mediocrity. If you want extraordinary, breakthrough results, you have to stop following the average playbook."
+        concl_hook = f"Winners execute while everyone else overanalyzes. If you want different results with **{topic}**, you have to act differently. No excuses, no shortcuts—commit fully and own the outcome!"
+        headings_map = [
+            f"1. Unlearning the Outdated Myths of {t_cap}",
+            f"2. The Unfiltered Reality of Execution",
+            f"3. Cutting the Noise: The Contrarian Playbook"
+        ]
+    elif tone_lower == "storytelling":
+        intro_hook = f"Picture this: you are standing at the starting line of your journey with **{topic}**, wondering if the climb is truly worth the view. Every master in this space once started exactly where you are sitting right now—with questions, uncertainty, and a desire to build something meaningful."
+        concl_hook = f"Every great transformation is simply a collection of small, brave moments strung together. Your chapter with **{topic}** is waiting to be written. Turn the page, trust the process, and embrace the story ahead!"
+        headings_map = [
+            f"1. Where the Journey Begins: Setting the Stage",
+            f"2. The Turning Point: Overcoming the Hard Days",
+            f"3. Hard-Won Lessons from the Trenches"
+        ]
+    elif tone_lower == "inspirational":
+        intro_hook = f"Every monumental achievement in human history started with a single spark of belief. Your ambition to excel at **{topic}** is not merely about learning a skill—it is an invitation to unlock your highest potential, expand your horizons, and create a lasting impact."
+        concl_hook = f"You have everything inside you required to master **{topic}**. Believe in your vision, celebrate your progress, and let your passion illuminate the way. Your greatest chapter begins today!"
+        headings_map = [
+            f"1. Igniting Your Vision & Purpose in {t_cap}",
+            f"2. Cultivating the Daily Discipline for Greatness",
+            f"3. Rising Above Roadblocks with Unshakable Focus"
+        ]
+    elif tone_lower == "informative":
+        intro_hook = f"A comprehensive, data-backed examination of **{topic}** reveals several critical pillars that dictate success. For {audience}, establishing an evidence-based roadmap is essential for building structured, repeatable outcomes."
+        concl_hook = f"In summary, building competence in **{topic}** requires a commitment to empirical validation, systematic iteration, and measured execution. Integrate these benchmarks into your workflow to ensure steady, predictable results."
+        headings_map = [
+            f"1. Theoretical Foundations & Key Definitions",
+            f"2. Methodological Framework & Guidelines",
+            f"3. Comparative Analysis & Performance Metrics"
+        ]
+    else:  # Professional
+        intro_hook = f"In today's fast-moving environment, establishing a strategic command of **{topic}** is a vital differentiator. For {audience}, aligning core methodologies with disciplined execution is key to achieving sustainable competitive advantage."
+        concl_hook = f"Ultimately, leadership in **{topic}** is driven by consistency, strategic clarity, and data-driven refinement. By embedding these principles into your daily operations, you establish a resilient foundation for long-term growth."
+        headings_map = [
+            f"1. Strategic Alignment & Core Principles of {t_cap}",
+            f"2. Operational Execution & Workflow Optimization",
+            f"3. Performance Benchmarking & Risk Mitigation"
+        ]
+
+    content = article["content"]
+    if "## 1." in content:
+        parts = content.split("## 1.", 1)
+        title_line = parts[0].split("\n\n")[0]
+        content = f"{title_line}\n\n{intro_hook}\n\n## 1.{parts[1]}"
+
+    for i, h_new in enumerate(headings_map[:3]):
+        h_prefix = f"## {i+1}."
+        if h_prefix in content:
+            head_split = content.split(h_prefix, 1)
+            line_rest = head_split[1].split("\n", 1)
+            content = f"{head_split[0]}## {h_new}\n{line_rest[1]}"
+
+    if "## Conclusion" in content:
+        c_parts = content.split("## Conclusion\n\n", 1)
+        content = f"{c_parts[0]}## Conclusion\n\n{concl_hook}\n"
+    return {"title": article["title"], "content": content}
+
+
 def generate_python_blog(
     topic: str,
     keywords_str: str = "",
@@ -766,6 +855,7 @@ def generate_python_blog(
     ctx = analyze_topic_domain(topic_clean)
     domain = ctx["domain"]
     article = build_domain_article(topic_clean, domain, audience, keywords, length)
+    article = apply_tone_styling(article, tone, topic_clean, audience)
     
     words = count_words(article["content"])
     meta_desc = f"Comprehensive guide to {topic_clean} for {audience}. Learn key strategies, tips, and actionable insights."
